@@ -109,26 +109,53 @@
     const visualLog = [];
     const audioLog = [];
 
-    function playTone(frequency) {
-      const context = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
+    // 音を管理する変数
+    let oscillator = null;
+    let audioContext = null;
+
+    // 継続音を再生
+    function startContinuousTone(frequency) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
 
       oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(frequency, context.currentTime);
+      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
       oscillator.connect(gain);
-      gain.connect(context.destination);
-
-      gain.gain.setValueAtTime(0.2, context.currentTime); // 音量調整
+      gain.connect(audioContext.destination);
+      gain.gain.setValueAtTime(0.2, audioContext.currentTime); // 音量
       oscillator.start();
-      oscillator.stop(context.currentTime + 0.2); // 0.2秒鳴らす
     }
 
+    // 音を止める
+    function stopTone() {
+      if (oscillator) {
+        oscillator.stop();
+        oscillator.disconnect();
+        oscillator = null;
+      }
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+      }
+    }
+
+    // 試聴ボタン：0.2秒だけ鳴らす
     previewBtn.onclick = () => {
       const freq = parseInt(frequencySelect.value);
-      playTone(freq);
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
     };
 
+    // ログ記録
     function updateLog(log, newTime, logEl, avgEl, countEl) {
       if (log.length >= 10) log.shift();
       log.push(newTime);
@@ -138,6 +165,7 @@
       countEl.textContent = `${log.length} / 10 件記録済み`;
     }
 
+    // スタート処理
     startBtn.onclick = () => {
       result.textContent = "";
       signalText.textContent = "";
@@ -155,7 +183,7 @@
 
           if (actionType === "sound") {
             const freq = parseInt(frequencySelect.value);
-            playTone(freq);
+            startContinuousTone(freq); // ボタンが押されるまで鳴らし続ける
           } else {
             signalText.textContent = "今だ！";
           }
@@ -163,6 +191,7 @@
       }, delay);
     };
 
+    // 反応ボタン処理
     reactBtn.onclick = () => {
       if (locked) return;
 
@@ -179,10 +208,11 @@
       ready = false;
       signalText.textContent = "";
 
-      if (actionType === "text") {
-        updateLog(visualLog, reactionTime, visualLogEl, visualAvgEl, visualCountEl);
-      } else {
+      if (actionType === "sound") {
+        stopTone(); // ボタンが押されたので音を止める
         updateLog(audioLog, reactionTime, audioLogEl, audioAvgEl, audioCountEl);
+      } else {
+        updateLog(visualLog, reactionTime, visualLogEl, visualAvgEl, visualCountEl);
       }
     };
   </script>
