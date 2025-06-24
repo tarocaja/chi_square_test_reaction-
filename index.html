@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>反応時間テスト</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+    #startBtn, #reactBtn { padding: 10px 20px; font-size: 1.2em; margin: 10px; }
+    #signalText { font-size: 2em; margin: 20px; color: red; }
+    .log-box { margin: 10px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+  <h1>反応時間テスト</h1>
+  <button id="startBtn">スタート</button>
+  <button id="reactBtn">見えたら/音が鳴ったら押す！</button>
+  <p id="signalText"></p>
+  <p id="result"></p>
+  <p id="errorMsg" style="color: red;"></p>
+
+  <div class="log-box">
+    <h3>光の反応履歴（最大10件）</h3>
+    <ul id="visualLog"></ul>
+    <p id="visualCount"></p>
+    <p id="visualAvg"></p>
+  </div>
+
+  <div class="log-box">
+    <h3>音の反応履歴（最大10件）</h3>
+    <ul id="audioLog"></ul>
+    <p id="audioCount"></p>
+    <p id="audioAvg"></p>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    const reactBtn = document.getElementById("reactBtn");
+    const signalText = document.getElementById("signalText");
+    const result = document.getElementById("result");
+    const errorMsg = document.getElementById("errorMsg");
+
+    const visualLogEl = document.getElementById("visualLog");
+    const audioLogEl = document.getElementById("audioLog");
+    const visualAvgEl = document.getElementById("visualAvg");
+    const audioAvgEl = document.getElementById("audioAvg");
+    const visualCountEl = document.getElementById("visualCount");
+    const audioCountEl = document.getElementById("audioCount");
+
+    let startTime = 0;
+    let actionType = "";
+    let ready = false;
+    let locked = false;
+
+    const visualLog = [];
+    const audioLog = [];
+
+    function playBeep() {
+      const context = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = context.createOscillator();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(1000, context.currentTime);
+      oscillator.connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + 0.2);
+    }
+
+    function updateLog(log, newTime, logEl, avgEl, countEl) {
+      if (log.length >= 10) log.shift();
+      log.push(newTime);
+      logEl.innerHTML = log.map(t => `<li>${t.toFixed(3)} 秒</li>`).join("");
+      const avg = log.reduce((a, b) => a + b, 0) / log.length;
+      avgEl.textContent = `平均: ${avg.toFixed(3)} 秒`;
+      countEl.textContent = `${log.length} / 10 件記録済み`;
+    }
+
+    startBtn.onclick = () => {
+      result.textContent = "";
+      signalText.textContent = "";
+      errorMsg.textContent = "";
+      ready = false;
+      locked = false;
+
+      const delay = Math.random() * 7000 + 3000; // 3〜10秒待機
+
+      actionType = Math.random() < 0.5 ? "sound" : "text";
+
+      setTimeout(() => {
+        if (!locked) {
+          startTime = Date.now();
+          ready = true;
+
+          if (actionType === "sound") {
+            playBeep();
+          } else {
+            signalText.textContent = "今だ！";
+          }
+        }
+      }, delay);
+    };
+
+    reactBtn.onclick = () => {
+      if (locked) return;
+
+      errorMsg.textContent = "";
+      if (!ready) {
+        errorMsg.textContent = "まだですよ！再スタートしてください。";
+        result.textContent = "";
+        locked = true;
+        return;
+      }
+
+      const reactionTime = (Date.now() - startTime) / 1000;
+      result.textContent = `反応時間: ${reactionTime.toFixed(3)} 秒 → ${reactionTime >= 0.3 ? "0.3秒以上" : "0.3秒未満"}`;
+      ready = false;
+      signalText.textContent = "";
+
+      if (actionType === "text") {
+        updateLog(visualLog, reactionTime, visualLogEl, visualAvgEl, visualCountEl);
+      } else {
+        updateLog(audioLog, reactionTime, audioLogEl, audioAvgEl, audioCountEl);
+      }
+    };
+  </script>
+</body>
+</html>
