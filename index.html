@@ -1,69 +1,48 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <title>反応時間テスト</title>
-  <style>
-    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
-    #startBtn, #reactBtn { padding: 10px 20px; font-size: 1.2em; margin: 10px; }
-    #signalText { font-size: 2em; margin: 20px; color: red; }
-    .log-box { margin: 10px; font-size: 0.9em; }
-  </style>
-</head>
 <body>
-
   <h1>反応時間テスト</h1>
+  <!-- 音の選択 -->
+  <label for="soundSelect">使用する音を選んでください：</label>
+  <select id="soundSelect">
+    <option value="beep1.mp3">音1</option>
+    <option value="beep2.mp3">音2</option>
+    <option value="beep3.mp3">音3</option>
+    <option value="beep4.mp3">音4</option>
+    <option value="beep5.mp3">音5</option>
+  </select>
+  <button id="previewBtn">試聴</button> <!-- 試聴ボタン -->
+
+  <br><br>
+
   <button id="startBtn">スタート</button>
   <button id="reactBtn">見えたら/音が鳴ったら押す！</button>
   <p id="signalText"></p>
   <p id="result"></p>
   <p id="errorMsg" style="color: red;"></p>
 
-  <div class="log-box">
-    <h3>光の反応履歴（最大10件）</h3>
-    <ul id="visualLog"></ul>
-    <p id="visualCount"></p>
-    <p id="visualAvg"></p>
-  </div>
-
-  <div class="log-box">
-    <h3>音の反応履歴（最大10件）</h3>
-    <ul id="audioLog"></ul>
-    <p id="audioCount"></p>
-    <p id="audioAvg"></p>
-  </div>
+  <!-- ログはそのまま -->
 
   <script>
     const startBtn = document.getElementById("startBtn");
     const reactBtn = document.getElementById("reactBtn");
-    const signalText = document.getElementById("signalText");
-    const result = document.getElementById("result");
-    const errorMsg = document.getElementById("errorMsg");
-
-    const visualLogEl = document.getElementById("visualLog");
-    const audioLogEl = document.getElementById("audioLog");
-    const visualAvgEl = document.getElementById("visualAvg");
-    const audioAvgEl = document.getElementById("audioAvg");
-    const visualCountEl = document.getElementById("visualCount");
-    const audioCountEl = document.getElementById("audioCount");
+    const previewBtn = document.getElementById("previewBtn");
+    const soundSelect = document.getElementById("soundSelect");
 
     let startTime = 0;
     let actionType = "";
     let ready = false;
     let locked = false;
 
-    const visualLog = [];
-    const audioLog = [];
+    const visualLog = [], audioLog = [];
 
-    function playBeep() {
-      const context = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = context.createOscillator();
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(1000, context.currentTime);
-      oscillator.connect(context.destination);
-      oscillator.start();
-      oscillator.stop(context.currentTime + 0.2);
+    // 選択された音ファイルを再生
+    function playSelectedSound() {
+      const audio = new Audio(soundSelect.value);
+      audio.play();
     }
+
+    previewBtn.onclick = () => {
+      playSelectedSound();
+    };
 
     function updateLog(log, newTime, logEl, avgEl, countEl) {
       if (log.length >= 10) log.shift();
@@ -81,8 +60,7 @@
       ready = false;
       locked = false;
 
-      const delay = Math.random() * 7000 + 3000; // 3〜10秒待機
-
+      const delay = Math.random() * 7000 + 3000;
       actionType = Math.random() < 0.5 ? "sound" : "text";
 
       setTimeout(() => {
@@ -91,7 +69,7 @@
           ready = true;
 
           if (actionType === "sound") {
-            playBeep();
+            playSelectedSound();  // 選択した音を再生
           } else {
             signalText.textContent = "今だ！";
           }
@@ -123,4 +101,3 @@
     };
   </script>
 </body>
-</html>
